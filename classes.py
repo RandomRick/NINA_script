@@ -1,6 +1,39 @@
 #!/usr/bin/python
 
-import encodings, binascii, codecs
+import encodings, binascii, codecs, logging
+
+import serial
+
+
+
+
+def main():
+
+    SerialPort = RJHSerialPort()
+
+    # define the custom service
+    Refco_service = GATT_service()
+    # and add its characteristics
+    Refco_service.append ( GATT_char(Description="Temperature 1", printfunction=PrintTemp,     UUID="FF00", value = -40) )
+    Refco_service.append ( GATT_char(Description="Temperature 2", printfunction=PrintTemp,     UUID="FF01", value =  60) )
+    Refco_service.append ( GATT_char(Description="Pressure 1",    printfunction=PrintPressure, UUID="FF02", value =  10) )
+    Refco_service.append ( GATT_char(Description="Pressure 2",    printfunction=PrintPressure, UUID="FF03", value =  10) )
+    Refco_service.append ( GATT_char(Description="Refrigerant",   printfunction=print,         UUID="FF04", value =  60, DefaultVal="R410A") )
+
+    # Now send the service to the u-blox NINA B1 module:
+    IntelliWriteSerial(Refco_service)
+
+    # send the service's characteristics to the u-blox NINA B1 module
+    for i in Refco_service.characteristics:
+        IntelliWriteSerial(i)
+
+
+
+
+class RJHSerialPort:
+    def __INIT__(self, portname):
+        self.portname = portname
+
 
 
 #  value formatters
@@ -9,6 +42,9 @@ def PrintTemp(value):
 
 def PrintPressure(value):
     return ("{0} bar".format(value))
+    
+def PrintVanilla (value):
+    return str(value)
 
 class GATT_service:
     def __init__ (self,
@@ -82,25 +118,41 @@ def RegisterCharacteristics(characteristics):
         print ("AT+UBTGCHA={0},{1:02X},1,1{2}".format (i.UUID, i.Properties,i.DefaultVal))
 
 
-characteristiclist = []
-characteristiclist.append ( GATT_char(Description="Temperature 1", printfunction=PrintTemp,     UUID="FF00", value = -40) )
-characteristiclist.append ( GATT_char(Description="Temperature 2", printfunction=PrintTemp,     UUID="FF01", value =  60) )
-characteristiclist.append ( GATT_char(Description="Pressure 1",    printfunction=PrintPressure, UUID="FF02", value =  10) )
-characteristiclist.append ( GATT_char(Description="Pressure 2",    printfunction=PrintPressure, UUID="FF03", value =  10) )
-characteristiclist.append ( GATT_char(Description="Refrigerant",   printfunction=print,         UUID="FF04", value =  60, DefaultVal="R410A") )
+
+# writes a string to the serial port, and waits for the
+# specified response.  All good.
+def WriteReadSerial(out, termination):
+    # turn a single string terminator into a list, albeit with one element:
+    if  type(termination) == str:
+        termination = [termination]
+
+    print ("OUT: ", out)
+    print ("Now waiting for any of " , termination)
 
 
-for i in characteristiclist:
-    print ("{0:15} {1}".format (i.Description, i.FormattedValue))
 
-# send the characteristics to the u-blox Nina B1 module
-#RegisterCharacteristics(characteristiclist)
 
-Refco_service = GATT_service()
-Refco_service.append ( GATT_char(Description="Temperature 1", printfunction=PrintTemp,     UUID="FF00", value = -40) )
-Refco_service.append ( GATT_char(Description="Temperature 2", printfunction=PrintTemp,     UUID="FF01", value =  60) )
-Refco_service.append ( GATT_char(Description="Pressure 1",    printfunction=PrintPressure, UUID="FF02", value =  10) )
-Refco_service.append ( GATT_char(Description="Pressure 2",    printfunction=PrintPressure, UUID="FF03", value =  10) )
-Refco_service.append ( GATT_char(Description="Refrigerant",   printfunction=print,         UUID="FF04", value =  60, DefaultVal="R410A") )
 
-RegisterCharacteristics (Refco_service.characteristics)
+def IntelliWriteSerial(i):
+    if (type(i) == GATT_char):
+        answer = \
+            WriteReadSerial ("AT+UBTGCHA={0},{1:02X},1,1{2}".format (i.UUID, i.Properties,i.DefaultVal), ["OK", "ERROR"])
+        answer = "+UBTGCHA:36,37"
+
+
+
+# Refco_service = GATT_service()
+# Refco_service.append ( GATT_char(Description="Temperature 1", printfunction=PrintTemp,     UUID="FF00", value = -40) )
+# Refco_service.append ( GATT_char(Description="Temperature 2", printfunction=PrintTemp,     UUID="FF01", value =  60) )
+# Refco_service.append ( GATT_char(Description="Pressure 1",    printfunction=PrintPressure, UUID="FF02", value =  10) )
+# Refco_service.append ( GATT_char(Description="Pressure 2",    printfunction=PrintPressure, UUID="FF03", value =  10) )
+# Refco_service.append ( GATT_char(Description="Refrigerant",   printfunction=print,         UUID="FF04", value =  60, DefaultVal="R410A") )
+
+# #RegisterCharacteristics (Refco_service.characteristics)
+# print ("I got here, didn't I?")
+# for i in Refco_service.characteristics:
+#     IntelliWriteSerial(i)
+# IntelliWriteSerial(Refco_service)
+
+
+main()
