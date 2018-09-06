@@ -13,9 +13,12 @@ regex = re.compile (r'.*CHA:\d\d,\d+')
 RunBGthread : True
 conn_handle = -1 # connection handle dished out by +UUBTACLC and needed by SN
 mfg_name_handle = -1
-Temp1Handle = -1
-Temp2Handle = -1
-RefrigerantHandle = -1
+Temp1Handle = None
+Temp2Handle = None
+RefrigerantHandle = None
+Pressure1Handle = None
+Pressure2Handle = None
+VacuumHandle = None
 HaltOnError = True
 
 def main():
@@ -101,7 +104,6 @@ def WriteRead(stringIn):
     
     # special case: wait for "+STARTUP" afterwards if the command was CPWROFF
     if (stringIn.upper() == "AT+CPWROFF"):
-        print ("Bing bing!! It's a match")
         while (answer.upper() != "+STARTUP"):
             try:
                 answer = theport.readline().rstrip().decode()
@@ -159,9 +161,9 @@ def MessageLoop():
         # Connection notification event
         if (message[0:9] == '+UUBTACLC'):
             print ('ACL connection completed')
-            # if (not SendNotifications):
-            #     SendNotifications = True
-            #     time.sleep(1)
+            if (not SendNotifications):
+                SendNotifications = True
+                time.sleep(1)
             continue
 
         # Write request
@@ -204,8 +206,7 @@ def BatteryService():
 
 
 def RefcoService():
-    global Temp1Handle, Temp2Handle
-    global RefrigerantHandle
+    global Temp1Handle, Temp2Handle, Pressure1Handle, Pressure2Handle, RefrigerantHandle, VacuumHandle
     #setup device data service  # use UUID without connecting line
     WriteRead ("AT+UBTGSER=b0897c037fdd42a499abef47e3fe574f")
     #WriteRead ("AT+UBTGCHA=34832c10687d4eedb17f8b14f5ce70ea,12,1,1")        # Device State
@@ -215,7 +216,8 @@ def RefcoService():
     #WriteRead ("AT+UBTGCHA=7e6613f156fe46719c01f6605d5643f5,12,1,1")        # Transmitter Power (error in GATT definition confusing TX Power with RSSI)
     #WriteRead ("AT+UBTGCHA=775bf19859854a7596e32001ca1eba83,12,1,1")        # URL
     RefrigerantHandle = \
-    WriteRead ("AT+UBTGCHA=a76f5dc0ba6648a5b5db193f77bf9cdb,12,1,1")        # Refrigerant Name
+    WriteRead ("AT+UBTGCHA=a76f5dc0ba6648a5b5db193f77bf9cdb,12,1,1,{0}".format(StrToByteArray("R410A")))        # Refrigerant Name
+    WriteRead ("AT+UBTGDES=ABCD,1,1,{0}".format(StrToByteArray("Refrigerant")))
     #WriteRead ("AT+UBTGCHA=2a840c865ad742d6b0d0733ff134c215,12,1,1")        # Device Temperature Unit
     #WriteRead ("AT+UBTGCHA=3967993db8f84cacbddf65c38e452592,12,1,1")        # Device Pressure Unit
     #WriteRead ("AT+UBTGCHA=c124f471567d40e89d7a761dd2731fa7,12,1,1")        # Device Vacuum Unit
@@ -223,11 +225,14 @@ def RefcoService():
     #WriteRead ("AT+UBTGCHA=e780891363cb46b79898faa82dd4308f,12,1,1")        # Device Rotational Speed Unit
     #WriteRead ("AT+UBTGCHA=0af20aa48de1424da2dfc908b7f27b96,12,1,1")        # Device Valve Status
     Temp1Handle = \
-    WriteRead ("AT+UBTGCHA=dd5ef8d7f96a42d4ba4cf4028a7232f5,12,1,1")        # Device Temperature 1 Value
-    # Temp2Handle = \
-    # WriteRead ("AT+UBTGCHA=d4246dc425a040e0b34f45655882aa05,12,1,1")        # Device Temperature 2 Value
-    # WriteRead ("AT+UBTGCHA=a4ac522539734fb987e5e8d86ff0a528,12,1,1")        # Device Pressure 1 Value
-    # WriteRead ("AT+UBTGCHA=87395d5d16774d6daa5a8242614c09d6,12,1,1")        # Device Pressure 2 Value
+    WriteRead ("AT+UBTGCHA=dd5ef8d7f96a42d4ba4cf4028a7232f5,12,1,1,{0}".format( StrToByteArray("0 C")))         # Device Temperature 1 Value
+    Temp2Handle = \
+    WriteRead ("AT+UBTGCHA=d4246dc425a040e0b34f45655882aa05,12,1,1,{0}".format(StrToByteArray("100 C")))        # Device Temperature 2 Value
+    Pressure1Handle = \
+    WriteRead ("AT+UBTGCHA=a4ac522539734fb987e5e8d86ff0a528,12,1,1,{0}".format(StrToByteArray("-10 bar")))      # Device Pressure 1 Value
+    Pressure2Handle = \
+    WriteRead ("AT+UBTGCHA=8739,12,1,1,{0}".format(StrToByteArray("20 bar")))       # Device Pressure 2 Value
+    # WriteRead ("AT+UBTGCHA=87395d5d16774d6daa5a8242614c09d6,12,1,1,{0}".format(StrToByteArray("20 bar")))       # Device Pressure 2 Value
     # WriteRead ("AT+UBTGCHA=ef6111aec3ed4925af6e2f4c7183774b,12,1,1")        # Device Vacuum Value
     # #WriteRead ("AT+UBTGCHA=95ab2f3ccc0640d0a23741c3a9f0ac40,12,1,1")        # Device Weight Value
     # #WriteRead ("AT+UBTGCHA=c31201094d5e4d4b848de80ad27aa91e,12,1,1")        # Device Rotatational Speed Value
@@ -240,13 +245,13 @@ def RefcoService():
 
 
 def ReadRequest (StringIn):
-    global RefrigerantHandle, Temp1Handle
+    global RefrigerantHandle, Temp1Handle, Temp2Handle, Pressure1Handle, Pressure2Handle, VacuumHandle
     print ("Read Request service routine")
     print ("Message from Nina BLE: ""{0}""".format(StringIn))
     
     handle = StringIn.split(",")[1]
     if ( handle == str(RefrigerantHandle)):
-        dastring = "AT+UBTGRR={0},{1}".format(RefrigerantHandle,  str(codecs.encode(bytearray("R410A", "ascii"), "hex"), "ascii"))
+        # dastring = "AT+UBTGRR={0},{1}".format(RefrigerantHandle,  str(codecs.encode(bytearray("R410A", "ascii"), "hex"), "ascii"))
         dastring = "AT+UBTGRR={0},{1}".format("0",  str(codecs.encode(bytearray("R410A", "ascii"), "hex"), "ascii"))
         WriteRead (dastring)
         return
@@ -254,14 +259,24 @@ def ReadRequest (StringIn):
     if (handle == str(Temp1Handle)):
         # currently send a random string based on the time in seconds since epoch
         TemperatureString = "{0} deg C".format (-40 + calendar.timegm(time.gmtime()) % 100)
-        dastring = "AT+UBTGRR={0},{1}".format(Temp1Handle,  str(codecs.encode(bytearray(TemperatureString, "ascii"), "hex"), "ascii"))
+        # dastring = "AT+UBTGRR={0},{1}".format(Temp1Handle,  str(codecs.encode(bytearray(TemperatureString, "ascii"), "hex"), "ascii"))
+        dastring = "AT+UBTGRR={0},{1}".format("0",  str(codecs.encode(bytearray(TemperatureString, "ascii"), "hex"), "ascii"))
         WriteRead (dastring)
         return
 
+    if (handle == str(Temp2Handle)):
+        # currently send a random string based on the time in seconds since epoch
+        TemperatureString = "{0} deg C".format (-40 + calendar.timegm(time.gmtime()) % 100)
+        # dastring = "AT+UBTGRR={0},{1}".format(Temp2Handle,  str(codecs.encode(bytearray(TemperatureString, "ascii"), "hex"), "ascii"))
+        dastring = "AT+UBTGRR={0},{1}".format("0",  str(codecs.encode(bytearray(TemperatureString, "ascii"), "hex"), "ascii"))
+        WriteRead (dastring)
+        return
     # return
 
 
-
+# convert a string to a hex "byte array" of the type used by uBlox AT commands.
+def StrToByteArray (InString):
+    return str(codecs.encode(bytearray(InString, "ascii"), "hex"), "ascii")
 
 # execute main() function
 main()
