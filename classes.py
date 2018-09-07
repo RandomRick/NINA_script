@@ -2,7 +2,7 @@
 
 import encodings, binascii, codecs, logging
 import os
-
+import sys
 import serial
 
 COMPORT = 9
@@ -43,6 +43,9 @@ def main():
 
         for c in Refco_service.characteristics:
             print ("it's ", c.Description, c.handle)
+
+
+        theport.MessageLoop()
 
         # # send the service's characteristics to the u-blox NINA B1 module
         # for i in Refco_service.characteristics:
@@ -112,12 +115,30 @@ class SP:
 
 
 
+    def MessageLoop (self):
+        timeout = False
+        message = None
+        print ("setting serial time-out to 1 second")
+        SP.__theport.timeout = 1
+        while (1):
+            message = SP.__theport.readline().rstrip().decode()
+            # print dots whilst timing out
+            if ( len (message) == 0):
+                #if (not timeout):
+                    #print()
+                timeout = True
+                sys.stdout.write ('.')
+                sys.stdout.flush()
+                continue
 
-        if (type(i) == GATT_char):
-            answer = \
-            self.WriteRead ("AT+UBTGCHA={0},{1:02X},1,1{2}".format (i.UUID, i.Properties,i.DefaultVal), ["OK", "ERROR"])
+            # newline if we've been printing dots
+            if (timeout):
+                print()
+                timeout = False
 
-        
+            print ('IN:  ' + message)
+ 
+
 
 
 
