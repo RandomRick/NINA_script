@@ -124,6 +124,7 @@ def MessageLoop():
     SendNotifications = False
     message=""
     ConnectionCounter = 1
+    UUBTGRW_count = 0
 
     theport.timeout = 1
     while (1):
@@ -137,6 +138,10 @@ def MessageLoop():
             # temperature 1
             TemperatureString = "{0} deg C".format (-40 + ConnectionCounter % 100)
             dastring = "AT+UBTGSN=0,{0},{1}".format(Temp1Handle,  str(codecs.encode(bytearray(TemperatureString, "ascii"), "hex"), "ascii"))
+            WriteRead (dastring)
+            # temperature 1
+            TemperatureString = "{0} deg C".format (-40 + (ConnectionCounter+20) % 100)
+            dastring = "AT+UBTGSN=0,{0},{1}".format(Temp2Handle,  str(codecs.encode(bytearray(TemperatureString, "ascii"), "hex"), "ascii"))
             WriteRead (dastring)
             print ("")
 
@@ -161,26 +166,28 @@ def MessageLoop():
         # Connection notification event
         if (message[0:9] == '+UUBTACLC'):
             print ('ACL connection completed')
-            if (not SendNotifications):
-                SendNotifications = True
-                time.sleep(1)
-            continue
-
-        # Write request
-        if (message[0:8] == '+UUBTGRW'):
-            print ('request to write')
             # if (not SendNotifications):
             #     SendNotifications = True
             #     time.sleep(1)
             continue
 
+        # Write request
+        if (message[0:8] == '+UUBTGRW'):
+            UUBTGRW_count = UUBTGRW_count+1
+            if UUBTGRW_count == 5:
+                print ("Now sending notifications")
+                if (not SendNotifications):
+                    SendNotifications = True
+                    time.sleep(1)
+            continue
+
         # Read request
         if (message[0:8] == '+UUBTGRR'):
-            print ('request to read')
-            ReadRequest(message)
-            if (not SendNotifications):
-                SendNotifications = True
-                time.sleep(1)
+            # print ('request to read')
+            # ReadRequest(message)
+            # if (not SendNotifications):
+            #     SendNotifications = True
+            #     time.sleep(1)
             continue
 
         # Disconenction notification event
@@ -188,6 +195,7 @@ def MessageLoop():
             print ('ACL disconnected')
             # don't send notifications when not connected!
             SendNotifications = False
+            UUBTGRW_count = 0
             continue
 
 
