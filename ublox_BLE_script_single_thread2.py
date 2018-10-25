@@ -27,7 +27,7 @@ RefrigerantHandle = None
 Pressure1Handle = None
 Pressure2Handle = None
 VacuumHandle = None
-HaltOnError = False
+HaltOnError = True
 AsyncEvents = []
 
 def main():
@@ -145,8 +145,8 @@ def MessageLoop():
     while (1):
         # if connected, send notifications to show something changing
         if len(UUBTGRW_list) > 0:
-            print ("Send notifications {0}".format(ConnectionCounter))
-            print ("List of handles is ", UUBTGRW_list)
+            #print ("Send notifications {0}".format(ConnectionCounter))
+            #print ("List of handles is ", UUBTGRW_list)
             ConnectionCounter = ConnectionCounter + 1
             # refrigerant name
             if RefrigerantHandle in UUBTGRW_list :
@@ -155,17 +155,27 @@ def MessageLoop():
             # temperature 1
             if Temp1Handle in UUBTGRW_list:
                 TemperatureString = "{0} deg C".format (-40 + ConnectionCounter % 100)
+                print ("Temp1 = {0}".format (TemperatureString))
                 dastring = "AT+UBTGSN=0,{0},{1}".format(Temp1Handle,  str(codecs.encode(bytearray(TemperatureString, "ascii"), "hex"), "ascii"))
                 WriteRead (dastring)
-            # temperature 1
+            # temperature 2
             if Temp2Handle in UUBTGRW_list:
                 TemperatureString = "{0} deg C".format (-40 + (ConnectionCounter+20) % 100)
+                print ("Temp2 = {0}".format (TemperatureString))
                 dastring = "AT+UBTGSN=0,{0},{1}".format(Temp2Handle,  str(codecs.encode(bytearray(TemperatureString, "ascii"), "hex"), "ascii"))
                 WriteRead (dastring)
             if Pressure1Handle in UUBTGRW_list:
-                print ("DEBUG: I can't handle the pressure #1")
+                PressureString = "{0} bar".format (-1 + ConnectionCounter % 12)
+                dastring = "AT+UBTGSN=0,{0},{1}".format(Pressure1Handle,  str(codecs.encode(bytearray(PressureString, "ascii"), "hex"), "ascii"))
+                WriteRead (dastring)
             if Pressure2Handle in UUBTGRW_list:
-                print ("DEBUG: I can't handle the pressure #2")
+                PressureString = "{0} bar".format (-1 + ConnectionCounter % 32)
+                dastring = "AT+UBTGSN=0,{0},{1}".format(Pressure2Handle,  str(codecs.encode(bytearray(PressureString, "ascii"), "hex"), "ascii"))
+                WriteRead (dastring)
+            if VacuumHandle in UUBTGRW_list:
+                VacuumString = "{0} micron".format ((ConnectionCounter % 51) * 2000)
+                dastring = "AT+UBTGSN=0,{0},{1}".format(VacuumHandle,  str(codecs.encode(bytearray(VacuumString, "ascii"), "hex"), "ascii"))
+                WriteRead (dastring)
             print ("")
 
         if len(AsyncEvents) == 0:
@@ -266,7 +276,6 @@ def RefcoService():
     #WriteRead ("AT+UBTGCHA=775bf19859854a7596e32001ca1eba83,12,1,1")        # URL
     RefrigerantHandle = \
     WriteRead ("AT+UBTGCHA=a76f5dc0ba6648a5b5db193f77bf9cdb,12,1,1,{0}".format(StrToByteArray("R410A")))        # Refrigerant Name
-    WriteRead ("AT+UBTGDES=ABCD,1,1,{0}".format(StrToByteArray("Refrigerant")))
     #WriteRead ("AT+UBTGCHA=2a840c865ad742d6b0d0733ff134c215,12,1,1")        # Device Temperature Unit
     #WriteRead ("AT+UBTGCHA=3967993db8f84cacbddf65c38e452592,12,1,1")        # Device Pressure Unit
     #WriteRead ("AT+UBTGCHA=c124f471567d40e89d7a761dd2731fa7,12,1,1")        # Device Vacuum Unit
@@ -276,12 +285,13 @@ def RefcoService():
     Temp1Handle = \
     WriteRead ("AT+UBTGCHA=dd5ef8d7f96a42d4ba4cf4028a7232f5,12,1,1,{0}".format( StrToByteArray("0 C")))         # Device Temperature 1 Value
     Temp2Handle = \
-    WriteRead ("AT+UBTGCHA=d4246dc425a040e0b34f45655882aa05,12,1,1,{0}".format(StrToByteArray("100 C")))        # Device Temperature 2 Value
+    WriteRead ("AT+UBTGCHA=d4246dc425a040e0b34f45655882aa05,12,1,1,{0}".format(StrToByteArray("10 C")))        # Device Temperature 2 Value
     Pressure1Handle = \
     WriteRead ("AT+UBTGCHA=a4ac522539734fb987e5e8d86ff0a528,12,1,1,{0}".format(StrToByteArray("-10 bar")))      # Device Pressure 1 Value
     Pressure2Handle = \
-    WriteRead ("AT+UBTGCHA=8739,12,1,1,{0}".format(StrToByteArray("20 bar")))       # Device Pressure 2 Value
-    # WriteRead ("AT+UBTGCHA=87395d5d16774d6daa5a8242614c09d6,12,1,1,{0}".format(StrToByteArray("20 bar")))       # Device Pressure 2 Value
+    WriteRead ("AT+UBTGCHA=87395d5d16774d6daa5a8242614c09d6,12,1,1,{0}".format(StrToByteArray("20 bar")))       # Device Pressure 2 Value
+    VacuumHandle = \
+    WriteRead ("AT+UBTGCHA=ef6111aec3ed4925af6e2f4c7183774b,12,1,1,{0}".format(StrToByteArray("200 micron")))       # Device Vacuum pressure 1
     # WriteRead ("AT+UBTGCHA=ef6111aec3ed4925af6e2f4c7183774b,12,1,1")        # Device Vacuum Value
     # #WriteRead ("AT+UBTGCHA=95ab2f3ccc0640d0a23741c3a9f0ac40,12,1,1")        # Device Weight Value
     # #WriteRead ("AT+UBTGCHA=c31201094d5e4d4b848de80ad27aa91e,12,1,1")        # Device Rotatational Speed Value
