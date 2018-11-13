@@ -91,18 +91,20 @@ def main():
 def WriteRead(stringIn):
     global transactionglobal, Temp1Handle, Temp2Handle
     global AsyncEvents
+    debugplease = False
     returnvalue=""
     answer =""
-    print()
-    print ("Transaction " + str(transactionglobal))
+    if debugplease:
+        print()
+        print ("Transaction " + str(transactionglobal))
+        print ("OUT: " + stringIn)
     transactionglobal = transactionglobal+1
-    print ("OUT: " + stringIn)
     #stringIn = stringIn + "\r"
     theport.write(stringIn.encode() + b'\r')
     # read output from NINA until OK or ERROR
     while ((answer != "OK") and (answer != "ERROR")):
         answer = theport.readline().rstrip().decode()
-        print ("IN:  " + answer)
+        if debugplease: print ("IN:  " + answer)
 
         if answer[0:3] == "+UU":
             # we've got an event popped up that's nothing to do with the current message
@@ -121,7 +123,7 @@ def WriteRead(stringIn):
         while (answer.upper() != "+STARTUP"):
             try:
                 answer = theport.readline().rstrip().decode()
-                print ("IN: " + answer)
+                if debugplease:  print ("IN: " + answer)
             finally:
                 pass
 
@@ -166,14 +168,17 @@ def MessageLoop():
                 WriteRead (dastring)
             if Pressure1Handle in UUBTGRW_list:
                 PressureString = "{0} bar".format (-1 + ConnectionCounter % 12)
+                print ("Pressure 1 = " + PressureString)
                 dastring = "AT+UBTGSN=0,{0},{1}".format(Pressure1Handle,  str(codecs.encode(bytearray(PressureString, "ascii"), "hex"), "ascii"))
                 WriteRead (dastring)
             if Pressure2Handle in UUBTGRW_list:
                 PressureString = "{0} bar".format (-1 + ConnectionCounter % 32)
+                print ("Pressure 2 = " + PressureString)
                 dastring = "AT+UBTGSN=0,{0},{1}".format(Pressure2Handle,  str(codecs.encode(bytearray(PressureString, "ascii"), "hex"), "ascii"))
                 WriteRead (dastring)
             if VacuumHandle in UUBTGRW_list:
                 VacuumString = "{0} micron".format ((ConnectionCounter % 51) * 2000)
+                print ("Vacuum = " + VacuumString)
                 dastring = "AT+UBTGSN=0,{0},{1}".format(VacuumHandle,  str(codecs.encode(bytearray(VacuumString, "ascii"), "hex"), "ascii"))
                 WriteRead (dastring)
             print ("")
