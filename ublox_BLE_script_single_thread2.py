@@ -14,7 +14,7 @@ import binascii, codecs
 import calendar # for creating timestamps, etc.
 
 #globals
-COMPORT=9
+COMPORT=10
 transactionglobal = 1
 theport = serial.Serial()
 regex = re.compile (r'.*CHA:\d\d,\d+')
