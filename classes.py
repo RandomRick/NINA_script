@@ -5,7 +5,7 @@ import os
 import sys
 import serial
 
-COMPORT = 9
+COMPORT = 13
 theport = None  # serial port
 
 

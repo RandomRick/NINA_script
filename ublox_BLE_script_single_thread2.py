@@ -14,7 +14,7 @@ import binascii, codecs
 import calendar # for creating timestamps, etc.
 
 #globals
-COMPORT=10
+COMPORT=13
 transactionglobal = 1
 theport = serial.Serial()
 regex = re.compile (r'.*CHA:\d\d,\d+')
@@ -29,6 +29,8 @@ Pressure2Handle = None
 VacuumHandle = None
 HaltOnError = True
 AsyncEvents = []
+RTCDateHandle = None    # 2018-12-03 New characteristic
+ScaleMassHandle = None  # 2018-12-03 New characteristic
 
 def main():
     # test for operating system name
@@ -51,7 +53,10 @@ def main():
     WriteRead ("AT+UBTCM=2")
     WriteRead ("AT+UBTDM=3")
     WriteRead ("AT+UBTPM=2")
-    WriteRead ("AT+UBTLE=2")                    # 2 is peripheral
+    print ("DEBUG: Setting up central + peripheral mode:")
+    WriteRead ("AT+UBTLE=3")                    # 2 is peripheral, 3 is dual-mode
+    print ("DEBUG: Setting number of permissible conntions to 3:")
+    WriteRead ("AT+UBTCFG=2,3")                 # 1st param=1 mean "max BLE links", 2nd param = num of links
     WriteRead ("AT+UDSC=0,0")                   # turn off SPS server to increase GATT characteristics capability
     WriteRead ("AT+UBTLECFG=26,2")              # fiddle with MTU size - as above.
     WriteRead ("AT+UBTLN=""REFCOperipheralserver""")
@@ -91,7 +96,7 @@ def main():
 def WriteRead(stringIn):
     global transactionglobal, Temp1Handle, Temp2Handle
     global AsyncEvents
-    debugplease = False
+    debugplease = True
     returnvalue=""
     answer =""
     if debugplease:
@@ -292,17 +297,23 @@ def RefcoService():
     Temp2Handle = \
     WriteRead ("AT+UBTGCHA=d4246dc425a040e0b34f45655882aa05,12,1,1,{0}".format(StrToByteArray("10 C")))        # Device Temperature 2 Value
     Pressure1Handle = \
-    WriteRead ("AT+UBTGCHA=a4ac522539734fb987e5e8d86ff0a528,12,1,1,{0}".format(StrToByteArray("-10 bar")))      # Device Pressure 1 Value
+    WriteRead ("AT+UBTGCHA=a4ac522539734fb987e5e8d86ff0a528,12,1,1,{0}".format(StrToByteArray("-10 BAR")))      # Device Pressure 1 Value
     Pressure2Handle = \
-    WriteRead ("AT+UBTGCHA=87395d5d16774d6daa5a8242614c09d6,12,1,1,{0}".format(StrToByteArray("20 bar")))       # Device Pressure 2 Value
+    WriteRead ("AT+UBTGCHA=87395d5d16774d6daa5a8242614c09d6,12,1,1,{0}".format(StrToByteArray("20 BAR")))       # Device Pressure 2 Value
     VacuumHandle = \
-    WriteRead ("AT+UBTGCHA=ef6111aec3ed4925af6e2f4c7183774b,12,1,1,{0}".format(StrToByteArray("200 micron")))       # Device Vacuum pressure 1
+    WriteRead ("AT+UBTGCHA=ef6111aec3ed4925af6e2f4c7183774b,12,1,1,{0}".format(StrToByteArray("200 MICRON")))       # Device Vacuum pressure 1
     # WriteRead ("AT+UBTGCHA=ef6111aec3ed4925af6e2f4c7183774b,12,1,1")        # Device Vacuum Value
     # #WriteRead ("AT+UBTGCHA=95ab2f3ccc0640d0a23741c3a9f0ac40,12,1,1")        # Device Weight Value
     # #WriteRead ("AT+UBTGCHA=c31201094d5e4d4b848de80ad27aa91e,12,1,1")        # Device Rotatational Speed Value
     # #WriteRead ("AT+UBTGCHA=bcbacc6c2c394d40ae3fc158c7216ec8,12,1,1")        # Device Set Value
     # WriteRead ("AT+UBTGCHA=619b13b76fb1492a98a24fdfb85970c7,12,1,1")        # Device Date
     # WriteRead ("AT+UBTGCHA=271cb57aa96c44e382eddb9443591c27,12,1,1")        # Device Time
+
+    RTCDateHandle = \
+    WriteRead ("AT+UBTGCHA=11c175e560984c7984e85f27b2c65aba,12,1,1,{0}".format(StrToByteArray("DD.MM.YYYY")))       # RTC Date
+
+    ScaleMassHandle = \
+    WriteRead ("AT+UBTGCHA=cd0ba6a0c1ce418883c2d7489afc7d2c,12,1,1,{0}".format(StrToByteArray("0 KG")))       # Scale reading (Mass)
 
 
 

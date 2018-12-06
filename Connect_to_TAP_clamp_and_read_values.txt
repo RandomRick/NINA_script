@@ -1,0 +1,10 @@
+﻿# Date: 04/12/2018, 17:04
+# Manufacturer identification: "u-blox"
+# Model identification: "NINA-B1"
+# Firmware identification: "4.0.1-115"
+# Software Components: "4.0.1-115","NINA-B11X-4.0.1-115-0-gb4f5f70"
+# Build: "NINA-B11X-4.0.1-115-0-gb4f5f70"
+# Bluetooth Address: D4CA6EB72ACD
+# Wi-Fi Address:
+# Ethernet Address:
+AT+UMRS=115200,1,8,1,1,1
