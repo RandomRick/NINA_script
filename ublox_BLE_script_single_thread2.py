@@ -27,10 +27,11 @@ RefrigerantHandle = None
 Pressure1Handle = None
 Pressure2Handle = None
 VacuumHandle = None
-HaltOnError = True
+HaltOnError = False
 AsyncEvents = []
 RTCDateHandle = None    # 2018-12-03 New characteristic
 ScaleMassHandle = None  # 2018-12-03 New characteristic
+SmartPhoneACLHandle = None
 
 def main():
     # test for operating system name
@@ -55,7 +56,7 @@ def main():
     WriteRead ("AT+UBTPM=2")
     print ("DEBUG: Setting up central + peripheral mode:")
     WriteRead ("AT+UBTLE=3")                    # 2 is peripheral, 3 is dual-mode
-    print ("DEBUG: Setting number of permissible conntions to 3:")
+    # print ("DEBUG: Setting number of permissible conntions to 3:")
     WriteRead ("AT+UBTCFG=2,3")                 # 1st param=1 mean "max BLE links", 2nd param = num of links
     WriteRead ("AT+UDSC=0,0")                   # turn off SPS server to increase GATT characteristics capability
     WriteRead ("AT+UBTLECFG=26,2")              # fiddle with MTU size - as above.
@@ -114,6 +115,9 @@ def WriteRead(stringIn):
         if answer[0:3] == "+UU":
             # we've got an event popped up that's nothing to do with the current message
             AsyncEvents.append(answer)
+            print("DEBUG:")
+            print  ("DEBUG: Parking this event for later: ", answer)
+            print ("DEBUG:")
 
         if (HaltOnError):
             if (answer.upper() == "ERROR"):
@@ -151,40 +155,51 @@ def MessageLoop():
     theport.timeout = 1
     while (1):
         # if connected, send notifications to show something changing
-        if len(UUBTGRW_list) > 0:
+        if SendNotifications and len(UUBTGRW_list) > 0:
             #print ("Send notifications {0}".format(ConnectionCounter))
             #print ("List of handles is ", UUBTGRW_list)
             ConnectionCounter = ConnectionCounter + 1
             # refrigerant name
             if RefrigerantHandle in UUBTGRW_list :
-                dastring = "AT+UBTGSN=0,{0},{1}".format(RefrigerantHandle,  str(codecs.encode(bytearray("R410A", "ascii"), "hex"), "ascii"))
+                print ("R410A")
+                dastring = "AT+UBTGSN={2},{0},{1}".format(RefrigerantHandle,  str(codecs.encode(bytearray("R410A", "ascii"), "hex"), "ascii"), SmartPhoneACLHandle)
                 WriteRead (dastring)
             # temperature 1
             if Temp1Handle in UUBTGRW_list:
-                TemperatureString = "{0} deg C".format (-40 + ConnectionCounter % 100)
+                TemperatureString = "{0} C".format (-40 + ConnectionCounter % 100)
                 print ("Temp1 = {0}".format (TemperatureString))
-                dastring = "AT+UBTGSN=0,{0},{1}".format(Temp1Handle,  str(codecs.encode(bytearray(TemperatureString, "ascii"), "hex"), "ascii"))
+                dastring = "AT+UBTGSN={2},{0},{1}".format(Temp1Handle,  str(codecs.encode(bytearray(TemperatureString, "ascii"), "hex"), "ascii"), SmartPhoneACLHandle)
                 WriteRead (dastring)
             # temperature 2
             if Temp2Handle in UUBTGRW_list:
-                TemperatureString = "{0} deg C".format (-40 + (ConnectionCounter+20) % 100)
+                TemperatureString = "{0} C".format (-40 + (ConnectionCounter+20) % 100)
                 print ("Temp2 = {0}".format (TemperatureString))
-                dastring = "AT+UBTGSN=0,{0},{1}".format(Temp2Handle,  str(codecs.encode(bytearray(TemperatureString, "ascii"), "hex"), "ascii"))
+                dastring = "AT+UBTGSN={2},{0},{1}".format(Temp2Handle,  str(codecs.encode(bytearray(TemperatureString, "ascii"), "hex"), "ascii"),SmartPhoneACLHandle)
                 WriteRead (dastring)
             if Pressure1Handle in UUBTGRW_list:
-                PressureString = "{0} bar".format (-1 + ConnectionCounter % 12)
+                PressureString = "{0} BAR".format (-1 + ConnectionCounter % 12)
                 print ("Pressure 1 = " + PressureString)
-                dastring = "AT+UBTGSN=0,{0},{1}".format(Pressure1Handle,  str(codecs.encode(bytearray(PressureString, "ascii"), "hex"), "ascii"))
+                dastring = "AT+UBTGSN={2},{0},{1}".format(Pressure1Handle,  str(codecs.encode(bytearray(PressureString, "ascii"), "hex"), "ascii"),SmartPhoneACLHandle)
                 WriteRead (dastring)
             if Pressure2Handle in UUBTGRW_list:
-                PressureString = "{0} bar".format (-1 + ConnectionCounter % 32)
+                PressureString = "{0} BAR".format (-1 + ConnectionCounter % 32)
                 print ("Pressure 2 = " + PressureString)
-                dastring = "AT+UBTGSN=0,{0},{1}".format(Pressure2Handle,  str(codecs.encode(bytearray(PressureString, "ascii"), "hex"), "ascii"))
+                dastring = "AT+UBTGSN={2},{0},{1}".format(Pressure2Handle,  str(codecs.encode(bytearray(PressureString, "ascii"), "hex"), "ascii"),SmartPhoneACLHandle)
                 WriteRead (dastring)
             if VacuumHandle in UUBTGRW_list:
-                VacuumString = "{0} micron".format ((ConnectionCounter % 51) * 2000)
+                VacuumString = "{0} MICRON".format ((ConnectionCounter % 51) * 2000)
                 print ("Vacuum = " + VacuumString)
-                dastring = "AT+UBTGSN=0,{0},{1}".format(VacuumHandle,  str(codecs.encode(bytearray(VacuumString, "ascii"), "hex"), "ascii"))
+                dastring = "AT+UBTGSN={2},{0},{1}".format(VacuumHandle,  str(codecs.encode(bytearray(VacuumString, "ascii"), "hex"), "ascii"),SmartPhoneACLHandle)
+                WriteRead (dastring)
+            if RTCDateHandle in UUBTGRW_list:
+                RTCDateString = "DD-MM-YYYY"
+                print ("RTCDate = " + RTCDateString)
+                dastring = "AT+UBTGSN={2},{0},{1}".format(RTCDateHandle,  str(codecs.encode(bytearray(RTCDateString, "ascii"), "hex"), "ascii"),SmartPhoneACLHandle)
+                WriteRead (dastring)
+            if ScaleMassHandle in UUBTGRW_list:
+                ScaleMassString = "75.5 KG"
+                print ("Scale Mass = " + ScaleMassString)
+                dastring = "AT+UBTGSN={2},{0},{1}".format(ScaleMassHandle,  str(codecs.encode(bytearray(ScaleMassString, "ascii"), "hex"), "ascii"),SmartPhoneACLHandle)
                 WriteRead (dastring)
             print ("")
 
@@ -217,6 +232,10 @@ def MessageLoop():
             # if (not SendNotifications):
             #     SendNotifications = True
             #     time.sleep(1)
+            # 2018-12-10  Now that we've set things up for multiple connections (UBTLE=3), we will get back handles that aren't 0
+            # for the connection.  So now we need to keep the handle, and refer to it when sending notifications.
+            SmartPhoneACLHandle =  message.split(":")[1].split(",")[0]
+            print ("DEBUG: the handle for the ACL is ", SmartPhoneACLHandle)
             continue
 
         # Write request
@@ -275,7 +294,7 @@ def BatteryService():
 
 
 def RefcoService():
-    global Temp1Handle, Temp2Handle, Pressure1Handle, Pressure2Handle, RefrigerantHandle, VacuumHandle
+    global Temp1Handle, Temp2Handle, Pressure1Handle, Pressure2Handle, RefrigerantHandle, VacuumHandle, RTCDateHandle, ScaleMassHandle
     #setup device data service  # use UUID without connecting line
     WriteRead ("AT+UBTGSER=b0897c037fdd42a499abef47e3fe574f")
     #WriteRead ("AT+UBTGCHA=34832c10687d4eedb17f8b14f5ce70ea,12,1,1")        # Device State
@@ -285,7 +304,7 @@ def RefcoService():
     #WriteRead ("AT+UBTGCHA=7e6613f156fe46719c01f6605d5643f5,12,1,1")        # Transmitter Power (error in GATT definition confusing TX Power with RSSI)
     #WriteRead ("AT+UBTGCHA=775bf19859854a7596e32001ca1eba83,12,1,1")        # URL
     RefrigerantHandle = \
-    WriteRead ("AT+UBTGCHA=a76f5dc0ba6648a5b5db193f77bf9cdb,12,1,1,{0}".format(StrToByteArray("R410A")))        # Refrigerant Name
+    WriteRead ("AT+UBTGCHA=a76f5dc0ba6648a5b5db193f77bf9cdb,12,1,1,{0},0,20".format(StrToByteArray("R410A")))        # Refrigerant Name
     #WriteRead ("AT+UBTGCHA=2a840c865ad742d6b0d0733ff134c215,12,1,1")        # Device Temperature Unit
     #WriteRead ("AT+UBTGCHA=3967993db8f84cacbddf65c38e452592,12,1,1")        # Device Pressure Unit
     #WriteRead ("AT+UBTGCHA=c124f471567d40e89d7a761dd2731fa7,12,1,1")        # Device Vacuum Unit
@@ -293,15 +312,15 @@ def RefcoService():
     #WriteRead ("AT+UBTGCHA=e780891363cb46b79898faa82dd4308f,12,1,1")        # Device Rotational Speed Unit
     #WriteRead ("AT+UBTGCHA=0af20aa48de1424da2dfc908b7f27b96,12,1,1")        # Device Valve Status
     Temp1Handle = \
-    WriteRead ("AT+UBTGCHA=dd5ef8d7f96a42d4ba4cf4028a7232f5,12,1,1,{0}".format( StrToByteArray("0 C")))         # Device Temperature 1 Value
+    WriteRead ("AT+UBTGCHA=dd5ef8d7f96a42d4ba4cf4028a7232f5,12,1,1,{0},0,20".format( StrToByteArray("0 C")))         # Device Temperature 1 Value
     Temp2Handle = \
-    WriteRead ("AT+UBTGCHA=d4246dc425a040e0b34f45655882aa05,12,1,1,{0}".format(StrToByteArray("10 C")))        # Device Temperature 2 Value
+    WriteRead ("AT+UBTGCHA=d4246dc425a040e0b34f45655882aa05,12,1,1,{0},0,20".format(StrToByteArray("10 C")))        # Device Temperature 2 Value
     Pressure1Handle = \
-    WriteRead ("AT+UBTGCHA=a4ac522539734fb987e5e8d86ff0a528,12,1,1,{0}".format(StrToByteArray("-10 BAR")))      # Device Pressure 1 Value
+    WriteRead ("AT+UBTGCHA=a4ac522539734fb987e5e8d86ff0a528,12,1,1,{0},0,20".format(StrToByteArray("-10 BAR")))      # Device Pressure 1 Value
     Pressure2Handle = \
-    WriteRead ("AT+UBTGCHA=87395d5d16774d6daa5a8242614c09d6,12,1,1,{0}".format(StrToByteArray("20 BAR")))       # Device Pressure 2 Value
+    WriteRead ("AT+UBTGCHA=87395d5d16774d6daa5a8242614c09d6,12,1,1,{0},0,20".format(StrToByteArray("20 BAR")))       # Device Pressure 2 Value
     VacuumHandle = \
-    WriteRead ("AT+UBTGCHA=ef6111aec3ed4925af6e2f4c7183774b,12,1,1,{0}".format(StrToByteArray("200 MICRON")))       # Device Vacuum pressure 1
+    WriteRead ("AT+UBTGCHA=ef6111aec3ed4925af6e2f4c7183774b,12,1,1,{0},0,20".format(StrToByteArray("200 MICRON")))       # Device Vacuum pressure 1
     # WriteRead ("AT+UBTGCHA=ef6111aec3ed4925af6e2f4c7183774b,12,1,1")        # Device Vacuum Value
     # #WriteRead ("AT+UBTGCHA=95ab2f3ccc0640d0a23741c3a9f0ac40,12,1,1")        # Device Weight Value
     # #WriteRead ("AT+UBTGCHA=c31201094d5e4d4b848de80ad27aa91e,12,1,1")        # Device Rotatational Speed Value
@@ -310,17 +329,17 @@ def RefcoService():
     # WriteRead ("AT+UBTGCHA=271cb57aa96c44e382eddb9443591c27,12,1,1")        # Device Time
 
     RTCDateHandle = \
-    WriteRead ("AT+UBTGCHA=11c175e560984c7984e85f27b2c65aba,12,1,1,{0}".format(StrToByteArray("DD.MM.YYYY")))       # RTC Date
+    WriteRead ("AT+UBTGCHA=11c175e560984c7984e85f27b2c65aba,12,1,1,{0},0,20".format(StrToByteArray("DD.MM.YYYY")))       # RTC Date
 
     ScaleMassHandle = \
-    WriteRead ("AT+UBTGCHA=cd0ba6a0c1ce418883c2d7489afc7d2c,12,1,1,{0}".format(StrToByteArray("0 KG")))       # Scale reading (Mass)
+    WriteRead ("AT+UBTGCHA=cd0ba6a0c1ce418883c2d7489afc7d2c,12,1,1,{0},0,20".format(StrToByteArray("0 KG")))       # Scale reading (Mass)
 
 
 
 
 
 def ReadRequest (StringIn):
-    global RefrigerantHandle, Temp1Handle, Temp2Handle, Pressure1Handle, Pressure2Handle, VacuumHandle
+    global RefrigerantHandle, Temp1Handle, Temp2Handle, Pressure1Handle, Pressure2Handle, VacuumHandle, RTCDateHandle, ScaleMassHandle
     print ("Read Request service routine")
     print ("Message from Nina BLE: ""{0}""".format(StringIn))
     
