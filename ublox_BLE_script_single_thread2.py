@@ -144,7 +144,7 @@ def WriteRead(stringIn):
 
 
 def MessageLoop():
-    global AsyncEvents
+    global AsyncEvents,SmartPhoneACLHandle
     timeout = False
     global theport
     SendNotifications = False
@@ -241,7 +241,7 @@ def MessageLoop():
         # Write request
         if (message[0:8] == '+UUBTGRW'):
             # e.g. +UUBTGRW:0,33,0100,1
-            a,b,c,d = message.split (",")
+            _,b,c,_ = message.split (",")
             b = int(b)-1 # the minus one is because we get two handles when creating characteristics, and this is the upper handle
             if c == '0100':
                 if not b in UUBTGRW_list:
