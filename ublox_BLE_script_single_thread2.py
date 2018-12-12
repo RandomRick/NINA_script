@@ -50,6 +50,9 @@ def main():
     time.sleep (0.25)
     theport.flush()
 
+    if not (NinaVersionOK("4.0.1-153")):
+        print ("Nina version is not recent enough")
+        exit()
     #WriteRead ("AT+UFACTORY")
     WriteRead ("AT+UBTCM=2")
     WriteRead ("AT+UBTDM=3")
@@ -83,7 +86,7 @@ def main():
 
     RefcoService()
 
-    #BatteryService()
+    BatteryService()
 
     #Here we want to connect with a smartphone or an other ble device
     print ('Please connect smart-phone to REFCOperipheralserver')
@@ -111,6 +114,7 @@ def WriteRead(stringIn):
     while ((answer != "OK") and (answer != "ERROR")):
         answer = theport.readline().rstrip().decode()
         if debugplease: print ("IN:  " + answer)
+        if (answer != "OK" and answer != "ERROR"): returnvalue = answer
 
         if answer[0:3] == "+UU":
             # we've got an event popped up that's nothing to do with the current message
@@ -371,6 +375,34 @@ def ReadRequest (StringIn):
 # convert a string to a hex "byte array" of the type used by uBlox AT commands.
 def StrToByteArray (InString):
     return str(codecs.encode(bytearray(InString, "ascii"), "hex"), "ascii")
+
+
+def NinaVersionOK (min_version_string):
+    min_version = [int(x) for x in re.split("[-.]", min_version_string)]
+    actual_version_string = WriteRead ("AT+GMR")
+    actual_version = [int(x) for x in re.split("[-.]", actual_version_string[1:-1])]
+    print ("DEBUG: actual version string is ", actual_version)
+    # major version
+    if (actual_version[0] > min_version[0]): return True
+    if (actual_version[0] < min_version[0]): return False
+
+    # major versions match.  Test next level
+    # minor version
+    if (actual_version[1] > min_version[1]): return True
+    if (actual_version[1] < min_version[1]): return False
+
+    # minor versions match. Test next level
+    if (actual_version[2] > min_version[2]): return True
+    if (actual_version[2] < min_version[2]): return False
+
+    # minor-minor versions match.  Test the dash revision
+    #if (actual_version[3] > min_version[3]): return True
+    if (actual_version[3] < min_version[3]): return False
+
+    return True
+
+ 
+
 
 # execute main() function
 main()
