@@ -1,28 +1,7 @@
 .vscode/
 *swp
+*.html
+*.png
 
 /.metadata/
-On branch master
-Your branch is ahead of 'origin/master' by 5 commits.
-  (use "git push" to publish your local commits)
-
-Changes not staged for commit:
-  (use "git add <file>..." to update what will be committed)
-  (use "git checkout -- <file>..." to discard changes in working directory)
-
-	modified:   RemoteSystemsTempFiles/.project
-	modified:   classes.py
-	modified:   minimal_s_centre_script.txt
-	modified:   python_classes.py
-	modified:   s2ba.c
-	modified:   s2ba.exe
-	modified:   scope_test.py
-	modified:   string_to_byte_array.py
-	modified:   ublox_BLE_script v2.ps1
-	modified:   ublox_BLE_script v3.ps1
-	modified:   ublox_BLE_script.ps1
-	modified:   ublox_BLE_script.py
-	modified:   ublox_BLE_script_single_thread.py
-
-no changes added to commit (use "git add" and/or "git commit -a")
 sandbox.py

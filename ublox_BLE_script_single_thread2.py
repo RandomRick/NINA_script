@@ -191,7 +191,10 @@ def MessageLoop():
                 dastring = "AT+UBTGSN={2},{0},{1}".format(Pressure2Handle,  str(codecs.encode(bytearray(PressureString, "ascii"), "hex"), "ascii"),SmartPhoneACLHandle)
                 WriteRead (dastring)
             if VacuumHandle in UUBTGRW_list:
-                VacuumString = "{0} MICRON".format ((ConnectionCounter % 51) * 2000)
+                #VacuumString = "{0} MICRON".format ((ConnectionCounter % 51) * 2000)
+                a = ramp(75000,   10000,  0, 10, 240, ConnectionCounter)
+                b = ramp(10000,   50,  10, 240-10-1, 240, ConnectionCounter)
+                VacuumString = "{:08.2f} MICRON".format(max(a,b))
                 print ("Vacuum = " + VacuumString)
                 dastring = "AT+UBTGSN={2},{0},{1}".format(VacuumHandle,  str(codecs.encode(bytearray(VacuumString, "ascii"), "hex"), "ascii"),SmartPhoneACLHandle)
                 WriteRead (dastring)
@@ -402,6 +405,18 @@ def NinaVersionOK (min_version_string):
     return True
 
  
+
+
+def ramp(startval, endval, delay, ramptime, period, t):
+    # wrap time if it's > period
+    t = t % period
+    if (t < delay):
+        return 0.0
+    if (t > delay + ramptime):
+        return 0.0
+
+ 
+    return (endval - startval) * (t-delay) / ramptime + startval
 
 
 # execute main() function
